@@ -1,32 +1,52 @@
 version: '2'
 services:
   mysqlmaster:
-    image: mysql:5.7.15
-    container_name: mysqlMaster
+    build: ./cnf/master/.
+    hostname: mysqlmaster
+    container_name: mysqlmaster
     environment:
-      - "MYSQL_ROOT_PASSWORD=root"
+      - MYSQL_NODE_ROLE=MASTER
+      - MYSQL_SERVER_ID=1
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_ROOT_HOST=%
     ports:
       - "3309:3306"
-    volumes:
-      - ./cnf/master:/etc/mysql/conf.d/
+    command: "mysqld --server-id=1"
+    depends_on:
+      - mysqlslave
   mysqlslave:
-    image: mysql:5.7.15
-    container_name: mysqlDublicate
+    build: ./cnf/slave/.
+    hostname: mysqlslave
+    container_name: mysqlslave
     ports:
       - "3310:3306"
     environment:
-      - "MYSQL_ROOT_PASSWORD=root"
-    volumes:
-      - ./cnf/slave:/etc/mysql/conf.d/
+      - MYSQL_NODE_ROLE=SLAVE
+      - MYSQL_SERVER_ID=2
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_ROOT_HOST=% #links
+    command: "mysqld --server-id=2"
   mysqlconfigure:
-    image: mysql:5.7.15
+    build: ./cnf/master/.
     container_name: mysqlCnf
+    depends_on:
+      - mysqlmaster
+      - mysqlslave
     environment:
-      - "MYSQL_SLAVE_PASSWORD=root"
-      - "MYSQL_MASTER_PASSWORD=root"
-      - "MYSQL_ROOT_PASSWORD=root"
-      - "MYSQL_REPLICATION_USER=repl"
-      - "MYSQL_REPLICATION_PASSWORD=repl"
-    volumes:
-      - ./cnf/mysql_connector.sh:/tmp/mysql_connector.sh
-    command: /bin/bash -x /tmp/mysql_connector.sh
+      - MYSQL_NODE_ROLE=CONNECT
+      - MYSQL_SLAVE_PASSWORD=root
+      - MYSQL_MASTER_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_REPLICATION_USER=repl
+      - MYSQL_REPLICATION_PASSWORD=repl
+      - MYSQL_ROOT_HOST=%
+    command: /bin/bash -x /mysql_connector.sh
+  nginx:
+    build: ./cnf/nginx/.
+    hostname: "nginx"
+    container_name: "nginx"
+    depends_on:
+      - mysqlmaster
+      - mysqlslave
+    ports:
+      - 3306:3306

@@ -47,6 +47,7 @@ echo "Increase the max_connections to 2000"
 mysql --host mysqlmaster -uroot -p$MYSQL_MASTER_PASSWORD -AN -e 'set GLOBAL max_connections=2000';
 mysql --host mysqlslave -uroot -p$MYSQL_SLAVE_PASSWORD -AN -e 'set GLOBAL max_connections=2000';
 
+mysql --host mysqlslave -uroot -p$MYSQL_MASTER_PASSWORD -e "SLAVE START; \G"
 mysql --host mysqlslave -uroot -p$MYSQL_MASTER_PASSWORD -e "show slave status \G"
 
 echo "MySQL servers created!"
@@ -56,3 +57,5 @@ echo Variables available fo you :-
 echo
 echo MYSQL01_IP       : mysqlmaster
 echo MYSQL02_IP       : mysqlslave
+
+exit;
